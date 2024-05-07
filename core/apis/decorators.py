@@ -3,8 +3,17 @@ from flask import request
 from core.libs import assertions
 from functools import wraps
 
-
 class AuthPrincipal:
+    """
+    Represents the authenticated principal.
+
+    Attributes:
+        user_id (int): The ID of the authenticated user.
+        student_id (int): The ID of the authenticated student (if applicable).
+        teacher_id (int): The ID of the authenticated teacher (if applicable).
+        principal_id (int): The ID of the authenticated principal (if applicable).
+    """
+
     def __init__(self, user_id, student_id=None, teacher_id=None, principal_id=None):
         self.user_id = user_id
         self.student_id = student_id
@@ -13,14 +22,35 @@ class AuthPrincipal:
 
 
 def accept_payload(func):
+    """
+    Decorator that extracts JSON payload from the request.
+
+    Args:
+        func (callable): The function to be decorated.
+
+    Returns:
+        callable: The decorated function.
+    """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         incoming_payload = request.json
         return func(incoming_payload, *args, **kwargs)
+    
     return wrapper
 
 
 def authenticate_principal(func):
+    """
+    Decorator that authenticates the principal based on the X-Principal header.
+
+    Args:
+        func (callable): The function to be decorated.
+
+    Returns:
+        callable: The decorated function.
+    """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         p_str = request.headers.get('X-Principal')
@@ -40,7 +70,8 @@ def authenticate_principal(func):
         elif request.path.startswith('/principal'):
             assertions.assert_true(p.principal_id is not None, 'requester should be a principal')
         else:
-            assertions.assert_found(None, 'No such api')
+            assertions.assert_found(None, 'No such API')
 
         return func(p, *args, **kwargs)
+    
     return wrapper
